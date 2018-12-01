@@ -6,12 +6,16 @@
 #include<sstream>
 #include<utility>
 #include<queue>
+
 using namespace std;
+
+#include "test.h"
+
 
 class Sokoban{
 
     private:
-        
+
         int sizeH;
         int sizeW;
         int walls; //number of walls
@@ -26,7 +30,7 @@ class Sokoban{
         vector<pair<int,int>> dirt{{-1,0}, {1,0}, {0,-1}, {0,1} }; //four directions
 
         void initSize(vector<vector<char>> &board, string boardSize){
-            
+
             stringstream ss;
             ss<<boardSize;
 
@@ -67,7 +71,7 @@ class Sokoban{
             }
 
             //set walls to bound the box if not given by input
-            setWalls(board);
+            //setWalls(board);
 
         }
 
@@ -122,6 +126,54 @@ class Sokoban{
 
         void initBoundry(vector<vector<char>> &board){
 
+            boundry.resize(sizeH, vector<bool>(sizeW,true));
+
+            //change corners to false(unreachable)
+            for(int i=0; i<sizeH; i++){
+                for(int j=0; j<sizeW; j++){
+
+                    if(board[i][j]=='W'){
+                        boundry[i][j] = false;
+
+                    }else if(board[i][j]==' ' || board[i][j]=='P'){    
+
+                        int cnt_x=0;
+                        int cnt_y=0;
+
+                        for(int k=0;k<4;k++){
+
+                            int ty=i+dirt[k].first;
+                            int tx=j+dirt[k].second;
+
+                            if(inbox(ty, tx) && board[ty][tx]=='W'){
+                                if(k==0 || k==1) cnt_y++;
+                                else cnt_x++;
+                            }
+                        }
+
+                        if(cnt_y>=1 && cnt_x>=1)
+                            boundry[i][j] = false;
+                    }
+                }
+            }
+        }
+
+        void initFrom2DArray(vector<vector<char>> &board){
+            
+            sizeH=board.size();
+            sizeW=board[0].size();
+
+            for(int i=0;i<sizeH;i++){
+                for(int j=0;j<sizeW;j++){
+                    if(board[i][j]=='W')
+                        walls++;
+                    else if(board[i][j]=='B')
+                        boxes++;
+                    else if(board[i][j]=='S')
+                        storages++;
+                }
+            }
+
         }
 
         bool inbox(int y, int x){
@@ -129,9 +181,9 @@ class Sokoban{
         }
 
         void addPlayerLoc(vector<vector<char>> board, int i, int j){
-            
+
             for(int k=0;k<4;k++){
-                
+
                 int ty=i+dirt[k].first;
                 int tx=j+dirt[k].second;
 
@@ -145,11 +197,11 @@ class Sokoban{
         }
 
         void initFinals(vector<vector<char>> board){
-            
+
             //move boxes to goals and clear player's position on the board
             for(int i=0;i<sizeH;i++){
                 for(int j=0;j<sizeW;j++){
-                    
+
                     if(board[i][j]=='S')
                         board[i][j] = 'B';
                     else if(board[i][j]=='B')
@@ -158,7 +210,7 @@ class Sokoban{
                         board[i][j] = ' ';
                 }
             }
-                
+
             for(int i=0;i<sizeH;i++){
                 for(int j=0;j<sizeW;j++){
 
@@ -171,7 +223,7 @@ class Sokoban{
 
         //encode two dimensional vector into string
         string encode(vector<vector<char>> &board){
-            
+
             string res;
 
             for(auto b:board){
@@ -179,15 +231,15 @@ class Sokoban{
                     res.push_back(c);
                 }
             }
-            
+
             return res;
 
         }
-        
+
         //decode string to two dimensional vector
         vector<vector<char>> decode(string &s){
-            
-            vector<vector<char>> res(sizeH, vector<char>(sizeH, ' '));
+
+            vector<vector<char>> res(sizeH, vector<char>(sizeW, ' '));
 
             for(int i=0;i<sizeH;i++){
                 for(int j=0;j<sizeW;j++){
@@ -198,12 +250,12 @@ class Sokoban{
             return res;
 
         }
-        
+
         pair<int,int> getPlayerLoc(vector<vector<char>> &board){
-            
+
             for(int i=0;i<board.size();i++){
                 for(int j=0;j<board[0].size();j++){
-                    
+
                     if(board[i][j]=='P'){
                         return {i,j};
                     }
@@ -224,15 +276,16 @@ class Sokoban{
 
             return true;
         }
-        
-        void getNextStates(vector<vector<char>> board, queue<string>& q, pair<int,int> playerLoc){
-            
+
+        void getNextStates(vector<vector<char>> board, queue<string>& q, unordered_map<string,string> &parent,  unordered_set<string> &visited, pair<int,int> playerLoc){
+
             int y=playerLoc.first;
             int x=playerLoc.second;
+            string cur=encode(board);
             board[y][x] = ' ';
 
             for(int k=0;k<4;k++){
-                
+
                 int ty = y+dirt[k].first;
                 int tx = x+dirt[k].second;
 
@@ -243,27 +296,35 @@ class Sokoban{
                         int bx=tx+dirt[k].second;
 
                         if(moveBox(board, by, bx)){
-                            
+
                             char c1=board[ty][tx];
                             board[ty][tx]='P';
 
                             char c2=board[by][bx];
                             board[by][bx]='B';
-                            
-                            string tmp=encode(board);
-                            q.push(tmp);
 
+                            string tmp=encode(board);
                             board[ty][tx]=c1;
                             board[by][bx]=c2;
+
+                            if(visited.count(tmp)) continue;
+
+                            parent[tmp]=cur;
+                            q.push(tmp);
                         }
 
                     }else{
+
                         board[ty][tx]='P';
                         string tmp=encode(board);
-                        q.push(tmp);
                         board[ty][tx]=' ';
+
+                        if(visited.count(tmp)) continue;
+
+                        parent[tmp]=cur;
+                        q.push(tmp);
                     }
-                 }
+                }
             }
         }
 
@@ -274,7 +335,7 @@ class Sokoban{
 
             unordered_set<string> visited;
             int steps=0;
-            
+
             unordered_map<string, string> parent;
             parent[initState] = initState;
 
@@ -284,15 +345,13 @@ class Sokoban{
                 steps++;
 
                 for(int i=0;i<len;i++){
-                    
+
                     string cur=q.front();
                     q.pop();
 
-                    if(visited.count(cur)) 
-                        continue;
-
                     //find the solution
                     if(finalStates.count(cur)){
+                        print(parent, cur);
                         return ;
                     }
 
@@ -301,16 +360,18 @@ class Sokoban{
                     vector<vector<char>> board = decode(cur);
                     pair<int,int> playerLoc = getPlayerLoc(board);
 
-                    getNextStates(board, q, playerLoc);
+                    getNextStates(board, q, parent, visited, playerLoc);
 
                 }        
             }
+
+            cout<<"No answer!"<<endl;
         }
 
 
     public:
         Sokoban(string boardSize, string nWallSquares, string nBoxes, string nStorageLocations, string playerLoc){
-            
+
             vector<vector<char>> board;
 
             initSize(board, boardSize); 
@@ -320,73 +381,86 @@ class Sokoban{
             initPlayerLoc(board, playerLoc);
             initFinals(board);
             initBoundry(board);
-  
+
             initState=encode(board);
-            
+
             cout<<"Init: "<<endl;
             print(initState);
 
         }
 
-        void print(vector<vector<char>> &board){
+        Sokoban(vector<vector<char>>& board){
 
-            for(int i=0;i<sizeH;i++){
-                for(int j=0;j<sizeW;j++){
-                    cout<<board[i][j]<<" ";
-                }
-                cout<<endl;
+            initFrom2DArray(board);
+            initFinals(board);
+            initBoundry(board);
+            initState=encode(board);
+
+            cout<<"Boundey: "<<endl;
+            print(boundry);
+
+            cout<<"Init: "<<endl;
+            print(initState);
+        }
+
+        void print(unordered_map<string, string> &parent, string cur){
+
+            vector<string> status{cur};
+
+            while(parent[cur]!= cur){
+                cur=parent[cur];
+                status.push_back(cur);
             }
-            cout<<endl;
+
+            reverse(status.begin(), status.end());
+
+            for(string s:status){
+                print(s);
+            }
 
         }
-        
+
+        template <class T>
+            void print(vector<vector<T>> &board){
+
+                for(int i=0;i<sizeH;i++){
+                    for(int j=0;j<sizeW;j++){
+                        cout<<board[i][j]<<" ";
+                    }
+                    cout<<endl;
+                }
+                cout<<endl;
+
+            }
+
         void print( string &s ){
-            
+
             vector<vector<char>> board=decode(s);
             print(board);
 
         }
 
         void start(){
-           BFS(); 
+            BFS(); 
         }
 };
 
 
 int main(){
+    /*
+       Sokoban S(test3);
+       S.start();
+       */
 
-/*
-    string boardSize = "3 5";
-    string nWallSquares = "12 1 1 1 2 1 3 2 1 2 3 3 1 3 3 4 1 4 3 5 1 5 2 5 3";
-    string nBoxes = "1 3 2";
-    string nStorageLocations = "1 4 2";
-    string playerLoc = "2 2";
-
-    Sokoban S(boardSize, nWallSquares, nBoxes, nStorageLocations, playerLoc );
-    //S.start();
-*/
-
-
-    string boardSize = "8 8";
-    string nWallSquares = "0";
-    string nBoxes = "1 3 3";
-    string nStorageLocations = "1 6 6";
-    string playerLoc = "3 8";
-
-    Sokoban S(boardSize, nWallSquares, nBoxes, nStorageLocations, playerLoc );
-    //S.start();
-
-
-/*
-    string boardSize = "8 8";
-    string nWallSquares = "0";
-    string nBoxes = "2 3 3 5 5";
-    string nStorageLocations = "1 3 6 2 8";
-    string playerLoc = "7 7";
-
-    Sokoban S(boardSize, nWallSquares, nBoxes, nStorageLocations, playerLoc );
+    Sokoban S(test2);
     S.start();
 
-*/
-
+    /*    
+          Sokoban S(test4);
+          S.start();
+          */
+    /*
+       Sokoban S(test1);
+       S.start();
+       */    
 }
