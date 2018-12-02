@@ -25,7 +25,7 @@ class Sokoban{
         string initState;
         unordered_set<string> finalStates; 
 
-        vector<vector<bool>> boundry;
+        vector<vector<int>> boundry; //0:unreachable, -1:uncertainty, 1 reachable
 
         vector<pair<int,int>> dirt{{-1,0}, {1,0}, {0,-1}, {0,1} }; //four directions
 
@@ -124,16 +124,38 @@ class Sokoban{
 
         }
 
+        bool isBoundry(vector<vector<char>> &board, int i, int j, pair<int,int> d){
+            
+            if(!inbox(i,j) || board[i][j]=='W' || board[i][j]=='S' || boundry[i][j]==1)
+                return false;
+
+            if(boundry[i][j]==0)
+                return true;
+                
+            int ty=i+d.first;
+            int tx=j+d.second;
+
+            if(isBoundry(board, ty, tx, d)){
+                boundry[i][j] = 0;
+                return true;
+            }
+            else{ 
+                boundry[i][j] = 1;
+                return false;
+            }
+        }
+
         void initBoundry(vector<vector<char>> &board){
 
-            boundry.resize(sizeH, vector<bool>(sizeW,true));
+            boundry.resize(sizeH, vector<int>(sizeW,1));
 
-            //change corners to false(unreachable)
+            //change corners to -1(unreachable)
+            //and mark spaces with one wall neighbor as uncertainty 
             for(int i=0; i<sizeH; i++){
                 for(int j=0; j<sizeW; j++){
 
                     if(board[i][j]=='W'){
-                        boundry[i][j] = false;
+                        boundry[i][j] = 0;
 
                     }else if(board[i][j]==' ' || board[i][j]=='P'){    
 
@@ -151,15 +173,35 @@ class Sokoban{
                             }
                         }
 
-                        if(cnt_y>=1 && cnt_x>=1)
-                            boundry[i][j] = false;
+                        if(cnt_y>=1 && cnt_x>=1){
+                            boundry[i][j] = 0;
+                        }else if(cnt_y>=1 || cnt_x>=1){
+                            boundry[i][j] = -1;
+                        }
+                    }
+                }
+            }
+
+            //change uncertainty to either reachable or unreachable
+            for(int i=0;i<sizeH;i++){
+                for(int j=0;j<sizeW;j++){
+                    if(boundry[i][j]==0){
+                        //walk straight line in 4 directions
+                        for(int k=0;k<4;k++){
+                            
+                            pair<int,int> d=dirt[k];
+                            int ty=i+d.first;
+                            int tx=j+d.second;
+
+                            isBoundry(board, ty, tx, d);
+                        }
                     }
                 }
             }
         }
 
         void initFrom2DArray(vector<vector<char>> &board){
-            
+
             sizeH=board.size();
             sizeW=board[0].size();
 
@@ -447,20 +489,23 @@ class Sokoban{
 
 
 int main(){
-    /*
+    /* 
        Sokoban S(test3);
        S.start();
        */
 
-    Sokoban S(test2);
-    S.start();
+    /*
+       Sokoban S(test2);
+       S.start();
+       */
 
     /*    
           Sokoban S(test4);
           S.start();
           */
-    /*
-       Sokoban S(test1);
-       S.start();
-       */    
+
+
+    Sokoban S(test5);
+    S.start();
+
 }
