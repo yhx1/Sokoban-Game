@@ -149,8 +149,8 @@ class Sokoban{
 
             boundry.resize(sizeH, vector<int>(sizeW,1));
 
-            //change corners to -1(unreachable)
-            //and mark spaces with one wall neighbor as uncertainty 
+            //change corners to 0(unreachable)
+            //and mark spaces with one wall neighbor as -1(uncertainty) 
             for(int i=0; i<sizeH; i++){
                 for(int j=0; j<sizeW; j++){
 
@@ -324,7 +324,11 @@ class Sokoban{
             int y=playerLoc.first;
             int x=playerLoc.second;
             string cur=encode(board);
-            board[y][x] = ' ';
+
+            if(parent[cur][y*sizeW+x]=='S')
+                board[y][x] = 'S';
+            else
+                board[y][x] = ' ';
 
             for(int k=0;k<4;k++){
 
@@ -356,10 +360,11 @@ class Sokoban{
                         }
 
                     }else{
-
+                        
+                        char c=board[ty][tx];
                         board[ty][tx]='P';
                         string tmp=encode(board);
-                        board[ty][tx]=' ';
+                        board[ty][tx]=c;
 
                         if(visited.count(tmp)) continue;
 
@@ -489,21 +494,6 @@ class Sokoban{
 
 
 int main(){
-    /* 
-       Sokoban S(test3);
-       S.start();
-       */
-
-    /*
-       Sokoban S(test2);
-       S.start();
-       */
-
-    /*    
-          Sokoban S(test4);
-          S.start();
-          */
-
 
     Sokoban S(test5);
     S.start();
