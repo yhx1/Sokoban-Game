@@ -330,11 +330,14 @@ class Sokoban{
             return true;
         }
 
-        void getNextStates(vector<vector<char>> board, queue<string>& q, unordered_map<string,string> &parent,  unordered_set<string> &visited, pair<int,int> playerLoc){
+        void getNextStatesBFS(string cur, queue<string>& q, unordered_map<string,string> &parent,  unordered_set<string> &visited){
 
+            visited.insert(cur);
+            vector<vector<char>> board = decode(cur);
+            
+            pair<int,int> playerLoc = getPlayerLoc(board);
             int y=playerLoc.first;
             int x=playerLoc.second;
-            string cur=encode(board);
 
             if(storageLocs.count({y,x}))
                 board[y][x] = 'S';
@@ -413,17 +416,153 @@ class Sokoban{
                         return ;
                     }
 
-                    visited.insert(cur);
-
-                    vector<vector<char>> board = decode(cur);
-                    pair<int,int> playerLoc = getPlayerLoc(board);
-
-                    getNextStates(board, q, parent, visited, playerLoc);
+                    getNextStatesBFS(cur, q, parent, visited);
 
                 }        
             }
 
             cout<<"No answer!"<<endl;
+        }
+
+        struct Node{
+            int h; //manhattan distance between storages and boxes, smaller h has higher priority
+            string state;
+            Node(int h, string s):h(h), state(s){}
+        };
+
+        struct cmp{
+            bool operator()(Node *a, Node *b){
+                return a->h > b->h ;
+            }
+        };
+
+        int getManhattanDist(string cur){
+            
+            vector<vector<char>> board = decode(cur);
+            int h=0;
+        
+            for(int i=0;i<sizeH;i++){
+                for(int j=0;j<sizeW;j++){
+                    if(board[i][j]=='B'){
+                        
+                        int min_h=INT_MAX;
+                        
+                        for(auto s:storageLocs){
+                            int sy=s.first;
+                            int sx=s.second;
+                            int tmp=0;
+
+                            //box is on storage
+                            if(sy==i && sx==j){
+                                tmp -= 100;
+                            }else{
+                                tmp = abs(sy-i) + abs(sx-j);
+                            }
+                            min_h = min(tmp, min_h);
+                        }
+
+                        h+=min_h;
+                    }
+                }
+            }
+
+            return h;
+        
+        }
+        
+        void getNextStatesUCS(Node *cur, priority_queue<Node*, vector<Node*>, cmp>& pq, unordered_map<string,string> &parent,  unordered_set<string> &visited){
+
+            visited.insert(cur->state);
+            vector<vector<char>> board = decode(cur->state);
+            
+            pair<int,int> playerLoc = getPlayerLoc(board);
+            int y=playerLoc.first;
+            int x=playerLoc.second;
+
+            if(storageLocs.count({y,x}))
+                board[y][x] = 'S';
+            else
+                board[y][x] = ' ';
+
+            for(int k=0;k<4;k++){
+
+                int ty = y+dirt[k].first;
+                int tx = x+dirt[k].second;
+
+                if(inbox(ty, tx) && board[ty][tx]!='W'){
+
+                    if(board[ty][tx]=='B'){
+                        int by=ty+dirt[k].first;
+                        int bx=tx+dirt[k].second;
+
+                        if(moveBox(board, by, bx)){
+
+                            char c1=board[ty][tx];
+                            board[ty][tx]='P';
+
+                            char c2=board[by][bx];
+                            board[by][bx]='B';
+
+                            string tmp=encode(board);
+                            board[ty][tx]=c1;
+                            board[by][bx]=c2;
+
+                            if(visited.count(tmp)) continue;
+
+                            parent[tmp]=cur->state;
+                            
+                            //Get new Manhanttan Distance when moving a box 
+                            int _h = getManhattanDist(tmp);
+                            Node* next = new Node(_h, tmp);
+                            pq.push(next);
+                        }
+
+                    }else{
+
+                        char c=board[ty][tx];
+                        board[ty][tx]='P';
+                        string tmp=encode(board);
+                        board[ty][tx]=c;
+
+                        if(visited.count(tmp)) continue;
+
+                        parent[tmp]=cur->state;
+                        Node* next = new Node(cur->h, tmp);
+                        pq.push(next);
+                    }
+                }
+            }
+        }
+
+
+        void UCS(){
+
+            unordered_set<string> visited;
+ 
+            unordered_map<string, string> parent;
+            parent[initState] = initState;
+ 
+            priority_queue<Node*, vector<Node*>, cmp> pq;
+            int _h = getManhattanDist(initState);
+            Node* head = new Node(_h, initState);
+            pq.push(head);
+        
+            while(!pq.empty()){
+            
+                Node *cur=pq.top();
+                pq.pop();
+
+                if(finalStates.count(cur->state)){
+                    print(parent, cur->state);
+                    return ;
+                }
+
+                getNextStatesUCS(cur, pq, parent, visited);
+
+            }
+
+            cout<<"No answer!"<<endl;
+
         }
 
 
@@ -499,7 +638,7 @@ class Sokoban{
         }
 
         void start(){
-            BFS(); 
+            UCS(); 
         }
 };
 
