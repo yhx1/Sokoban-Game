@@ -12,6 +12,12 @@ using namespace std;
 #include "test.h"
 
 
+struct pair_hash {
+    inline std::size_t operator()(const std::pair<int,int> & v) const {
+        return v.first*31+v.second;
+    }
+};
+
 class Sokoban{
 
     private:
@@ -24,6 +30,7 @@ class Sokoban{
 
         string initState;
         unordered_set<string> finalStates; 
+        unordered_set<pair<int,int>, pair_hash> storageLocs;
 
         vector<vector<int>> boundry; //0:unreachable, -1:uncertainty, 1 reachable
 
@@ -106,6 +113,7 @@ class Sokoban{
                 ss>>y;
                 y-=1;
                 board[y][x] = 'S';
+                storageLocs.insert({y,x});
             }
         }
 
@@ -125,21 +133,20 @@ class Sokoban{
         }
 
         bool isBoundry(vector<vector<char>> &board, int i, int j, pair<int,int> d){
-            
+
             if(!inbox(i,j) || board[i][j]=='W' || board[i][j]=='S' || boundry[i][j]==1)
                 return false;
 
             if(boundry[i][j]==0)
                 return true;
-                
+
             int ty=i+d.first;
             int tx=j+d.second;
 
             if(isBoundry(board, ty, tx, d)){
                 boundry[i][j] = 0;
                 return true;
-            }
-            else{ 
+            }else{ 
                 boundry[i][j] = 1;
                 return false;
             }
@@ -185,16 +192,18 @@ class Sokoban{
             //change uncertainty to either reachable or unreachable
             for(int i=0;i<sizeH;i++){
                 for(int j=0;j<sizeW;j++){
-                    if(boundry[i][j]==0){
+                    if(boundry[i][j]==0 && board[i][j]!='W'){
                         //walk straight line in 4 directions
                         for(int k=0;k<4;k++){
-                            
+
                             pair<int,int> d=dirt[k];
                             int ty=i+d.first;
                             int tx=j+d.second;
 
                             isBoundry(board, ty, tx, d);
                         }
+                    }else if(boundry[i][j]==-1){
+                        boundry[i][j]=1;
                     }
                 }
             }
@@ -211,8 +220,10 @@ class Sokoban{
                         walls++;
                     else if(board[i][j]=='B')
                         boxes++;
-                    else if(board[i][j]=='S')
+                    else if(board[i][j]=='S'){
+                        storageLocs.insert({i,j});
                         storages++;
+                    }
                 }
             }
 
@@ -325,7 +336,7 @@ class Sokoban{
             int x=playerLoc.second;
             string cur=encode(board);
 
-            if(parent[cur][y*sizeW+x]=='S')
+            if(storageLocs.count({y,x}))
                 board[y][x] = 'S';
             else
                 board[y][x] = ' ';
@@ -360,7 +371,7 @@ class Sokoban{
                         }
 
                     }else{
-                        
+
                         char c=board[ty][tx];
                         board[ty][tx]='P';
                         string tmp=encode(board);
@@ -495,7 +506,7 @@ class Sokoban{
 
 int main(){
 
-    Sokoban S(test5);
+    Sokoban S(test1);
     S.start();
 
 }
