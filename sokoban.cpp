@@ -6,6 +6,7 @@
 #include<sstream>
 #include<utility>
 #include<queue>
+#include<fstream>
 
 using namespace std;
 
@@ -50,13 +51,13 @@ class Sokoban{
         void setWalls(vector<vector<char>> &board){
 
             for(int i=0;i<sizeW;i++){
-                board[0][i] = 'W';
-                board[sizeH-1][i] = 'W';
+                board[0][i] = '#';
+                board[sizeH-1][i] = '#';
             }
 
             for(int i=0;i<sizeH;i++){
-                board[i][0] = 'W';
-                board[i][sizeW-1] = 'W';
+                board[i][0] = '#';
+                board[i][sizeW-1] = '#';
             }
 
         }
@@ -74,7 +75,7 @@ class Sokoban{
                 x-=1;
                 ss>>y;
                 y-=1;
-                board[y][x] = 'W';
+                board[y][x] = '#';
             }
 
             //set walls to bound the box if not given by input
@@ -95,7 +96,7 @@ class Sokoban{
                 x-=1;
                 ss>>y;
                 y-=1;
-                board[y][x] = 'B';
+                board[y][x] = '$';
             }
         }
 
@@ -112,7 +113,7 @@ class Sokoban{
                 x-=1;
                 ss>>y;
                 y-=1;
-                board[y][x] = 'S';
+                board[y][x] = '.';
                 storageLocs.insert({y,x});
             }
         }
@@ -128,13 +129,13 @@ class Sokoban{
             ss>>y;
             y-=1;
 
-            board[y][x] = 'P';
+            board[y][x] = '@';
 
         }
 
         bool isBoundry(vector<vector<char>> &board, int i, int j, pair<int,int> d){
 
-            if(!inbox(i,j) || board[i][j]=='W' || board[i][j]=='S' || boundry[i][j]==1)
+            if(!inbox(i,j) || board[i][j]=='#' || board[i][j]=='.' || boundry[i][j]==1)
                 return false;
 
             if(boundry[i][j]==0)
@@ -161,10 +162,10 @@ class Sokoban{
             for(int i=0; i<sizeH; i++){
                 for(int j=0; j<sizeW; j++){
 
-                    if(board[i][j]=='W'){
+                    if(board[i][j]=='#'){
                         boundry[i][j] = 0;
 
-                    }else if(board[i][j]==' ' || board[i][j]=='P'){    
+                    }else if(board[i][j]==' ' || board[i][j]=='@'){    
 
                         int cnt_x=0;
                         int cnt_y=0;
@@ -174,7 +175,7 @@ class Sokoban{
                             int ty=i+dirt[k].first;
                             int tx=j+dirt[k].second;
 
-                            if(inbox(ty, tx) && board[ty][tx]=='W'){
+                            if(inbox(ty, tx) && board[ty][tx]=='#'){
                                 if(k==0 || k==1) cnt_y++;
                                 else cnt_x++;
                             }
@@ -192,7 +193,7 @@ class Sokoban{
             //change uncertainty to either reachable or unreachable
             for(int i=0;i<sizeH;i++){
                 for(int j=0;j<sizeW;j++){
-                    if(boundry[i][j]==0 && board[i][j]!='W'){
+                    if(boundry[i][j]==0 && board[i][j]!='#'){
                         //walk straight line in 4 directions
                         for(int k=0;k<4;k++){
 
@@ -216,11 +217,11 @@ class Sokoban{
 
             for(int i=0;i<sizeH;i++){
                 for(int j=0;j<sizeW;j++){
-                    if(board[i][j]=='W')
+                    if(board[i][j]=='#')
                         walls++;
-                    else if(board[i][j]=='B')
+                    else if(board[i][j]=='$')
                         boxes++;
-                    else if(board[i][j]=='S'){
+                    else if(board[i][j]=='.'){
                         storageLocs.insert({i,j});
                         storages++;
                     }
@@ -241,7 +242,7 @@ class Sokoban{
                 int tx=j+dirt[k].second;
 
                 if(inbox(ty, tx) && board[ty][tx]==' '){
-                    board[ty][tx] = 'P';
+                    board[ty][tx] = '@';
                     string tmp = encode(board);
                     finalStates.insert(tmp);
                     board[ty][tx] = ' ';
@@ -255,11 +256,11 @@ class Sokoban{
             for(int i=0;i<sizeH;i++){
                 for(int j=0;j<sizeW;j++){
 
-                    if(board[i][j]=='S')
-                        board[i][j] = 'B';
-                    else if(board[i][j]=='B')
+                    if(board[i][j]=='.')
+                        board[i][j] = '$';
+                    else if(board[i][j]=='$')
                         board[i][j] = ' ';
-                    else if(board[i][j]=='P')
+                    else if(board[i][j]=='@')
                         board[i][j] = ' ';
                 }
             }
@@ -267,7 +268,7 @@ class Sokoban{
             for(int i=0;i<sizeH;i++){
                 for(int j=0;j<sizeW;j++){
 
-                    if(board[i][j]=='B'){
+                    if(board[i][j]=='$'){
                         addPlayerLoc(board, i, j);
                     }
                 }
@@ -309,7 +310,7 @@ class Sokoban{
             for(int i=0;i<board.size();i++){
                 for(int j=0;j<board[0].size();j++){
 
-                    if(board[i][j]=='P'){
+                    if(board[i][j]=='@'){
                         return {i,j};
                     }
                 }
@@ -324,7 +325,7 @@ class Sokoban{
 
         bool moveBox(vector<vector<char>> &board, int by, int bx){
 
-            if(!inbox(by, bx) || board[by][bx]=='W' || board[by][bx]=='B' || !validPos(by, bx))
+            if(!inbox(by, bx) || board[by][bx]=='#' || board[by][bx]=='$' || !validPos(by, bx))
                 return false;
 
             return true;
@@ -340,7 +341,7 @@ class Sokoban{
             int x=playerLoc.second;
 
             if(storageLocs.count({y,x}))
-                board[y][x] = 'S';
+                board[y][x] = '.';
             else
                 board[y][x] = ' ';
 
@@ -349,19 +350,19 @@ class Sokoban{
                 int ty = y+dirt[k].first;
                 int tx = x+dirt[k].second;
 
-                if(inbox(ty, tx) && board[ty][tx]!='W'){
+                if(inbox(ty, tx) && board[ty][tx]!='#'){
 
-                    if(board[ty][tx]=='B'){
+                    if(board[ty][tx]=='$'){
                         int by=ty+dirt[k].first;
                         int bx=tx+dirt[k].second;
 
                         if(moveBox(board, by, bx)){
 
                             char c1=board[ty][tx];
-                            board[ty][tx]='P';
+                            board[ty][tx]='@';
 
                             char c2=board[by][bx];
-                            board[by][bx]='B';
+                            board[by][bx]='$';
 
                             string tmp=encode(board);
                             board[ty][tx]=c1;
@@ -376,7 +377,7 @@ class Sokoban{
                     }else{
 
                         char c=board[ty][tx];
-                        board[ty][tx]='P';
+                        board[ty][tx]='@';
                         string tmp=encode(board);
                         board[ty][tx]=c;
 
@@ -443,7 +444,7 @@ class Sokoban{
         
             for(int i=0;i<sizeH;i++){
                 for(int j=0;j<sizeW;j++){
-                    if(board[i][j]=='B'){
+                    if(board[i][j]=='$'){
                         
                         int min_h=INT_MAX;
                         
@@ -470,7 +471,7 @@ class Sokoban{
         
         }
         
-        void getNextStatesUCS(Node *cur, priority_queue<Node*, vector<Node*>, cmp>& pq, unordered_map<string,string> &parent,  unordered_set<string> &visited){
+        void getNextStatesGreedy(Node *cur, priority_queue<Node*, vector<Node*>, cmp>& pq, unordered_map<string,string> &parent,  unordered_set<string> &visited){
 
             visited.insert(cur->state);
             vector<vector<char>> board = decode(cur->state);
@@ -480,7 +481,7 @@ class Sokoban{
             int x=playerLoc.second;
 
             if(storageLocs.count({y,x}))
-                board[y][x] = 'S';
+                board[y][x] = '.';
             else
                 board[y][x] = ' ';
 
@@ -489,19 +490,19 @@ class Sokoban{
                 int ty = y+dirt[k].first;
                 int tx = x+dirt[k].second;
 
-                if(inbox(ty, tx) && board[ty][tx]!='W'){
+                if(inbox(ty, tx) && board[ty][tx]!='#'){
 
-                    if(board[ty][tx]=='B'){
+                    if(board[ty][tx]=='$'){
                         int by=ty+dirt[k].first;
                         int bx=tx+dirt[k].second;
 
                         if(moveBox(board, by, bx)){
 
                             char c1=board[ty][tx];
-                            board[ty][tx]='P';
+                            board[ty][tx]='@';
 
                             char c2=board[by][bx];
-                            board[by][bx]='B';
+                            board[by][bx]='$';
 
                             string tmp=encode(board);
                             board[ty][tx]=c1;
@@ -520,7 +521,7 @@ class Sokoban{
                     }else{
 
                         char c=board[ty][tx];
-                        board[ty][tx]='P';
+                        board[ty][tx]='@';
                         string tmp=encode(board);
                         board[ty][tx]=c;
 
@@ -535,7 +536,7 @@ class Sokoban{
         }
 
 
-        void UCS(){
+        void Greedy(){
 
             unordered_set<string> visited;
  
@@ -557,7 +558,7 @@ class Sokoban{
                     return ;
                 }
 
-                getNextStatesUCS(cur, pq, parent, visited);
+                getNextStatesGreedy(cur, pq, parent, visited);
 
             }
 
@@ -615,6 +616,8 @@ class Sokoban{
                 print(s);
             }
 
+            cout <<"Steps : " << status.size()<<endl;
+
         }
 
         template <class T>
@@ -638,14 +641,31 @@ class Sokoban{
         }
 
         void start(){
-            UCS(); 
+            Greedy(); 
         }
 };
 
 
 int main(){
+    
+    //while(1){
+        
+        string id;
+        cout << "Please enter a two digits number from 00 to 10:" << endl; 
+        cin >> id;
 
-    Sokoban S(test1);
-    S.start();
+        string name = "sokoban" + id + ".txt";
+        ifstream input("inputs/"+name);
+        string boardSize, nWallSquares, nBoxes, nStorageLocations, playerLoc;
 
+        getline(input, boardSize);
+        getline(input, nWallSquares);
+        getline(input, nBoxes);
+        getline(input, nStorageLocations);
+        getline(input, playerLoc);
+        
+        Sokoban S(boardSize, nWallSquares, nBoxes, nStorageLocations, playerLoc);
+        S.start();
+
+   // }
 }
