@@ -7,6 +7,7 @@
 #include<utility>
 #include<queue>
 #include<fstream>
+#include<stack>
 
 using namespace std;
 
@@ -424,6 +425,101 @@ class Sokoban{
 
             cout<<"No answer!"<<endl;
         }
+        
+        void getNextStatesDFS(string cur, stack<string>& stk, unordered_map<string,string> &parent,  unordered_set<string> &visited){
+
+            visited.insert(cur);
+            vector<vector<char>> board = decode(cur);
+            
+            pair<int,int> playerLoc = getPlayerLoc(board);
+            int y=playerLoc.first;
+            int x=playerLoc.second;
+
+            if(storageLocs.count({y,x}))
+                board[y][x] = '.';
+            else
+                board[y][x] = ' ';
+
+            for(int k=0;k<4;k++){
+
+                int ty = y+dirt[k].first;
+                int tx = x+dirt[k].second;
+
+                if(inbox(ty, tx) && board[ty][tx]!='#'){
+
+                    if(board[ty][tx]=='$'){
+                        int by=ty+dirt[k].first;
+                        int bx=tx+dirt[k].second;
+
+                        if(moveBox(board, by, bx)){
+
+                            char c1=board[ty][tx];
+                            board[ty][tx]='@';
+
+                            char c2=board[by][bx];
+                            board[by][bx]='$';
+
+                            string tmp=encode(board);
+                            board[ty][tx]=c1;
+                            board[by][bx]=c2;
+
+                            if(visited.count(tmp)) continue;
+
+                            parent[tmp]=cur;
+                            stk.push(tmp);
+                        }
+
+                    }else{
+
+                        char c=board[ty][tx];
+                        board[ty][tx]='@';
+                        string tmp=encode(board);
+                        board[ty][tx]=c;
+
+                        if(visited.count(tmp)) continue;
+
+                        parent[tmp]=cur;
+                        stk.push(tmp);
+                    }
+                }
+            }
+        }
+
+        void DFS(){
+
+            stack<string> stk;
+            stk.push(initState);
+
+            unordered_set<string> visited;
+            int steps=0;
+
+            unordered_map<string, string> parent;
+            parent[initState] = initState;
+
+            while(!stk.empty()){
+
+                int len=stk.size();
+                steps++;
+
+                for(int i=0;i<len;i++){
+
+                    string cur=stk.top();
+                    stk.pop();
+
+                    //find the solution
+                    if(finalStates.count(cur)){
+                        print(parent, cur);
+                        return ;
+                    }
+
+                    getNextStatesDFS(cur, stk, parent, visited);
+
+                }        
+            }
+
+            cout<<"No answer!"<<endl;
+        }
+
 
         struct Node{
             int h; //manhattan distance between storages and boxes, smaller h has higher priority
@@ -566,6 +662,105 @@ class Sokoban{
 
         }
 
+/*
+        void getNextStatesAstar(Node *cur, priority_queue<Node*, vector<Node*>, cmp>& pq, unordered_map<string,string> &parent,  unordered_set<string> &visited){
+
+            visited.insert(cur->state);
+            vector<vector<char>> board = decode(cur->state);
+            
+            pair<int,int> playerLoc = getPlayerLoc(board);
+            int y=playerLoc.first;
+            int x=playerLoc.second;
+
+            if(storageLocs.count({y,x}))
+                board[y][x] = '.';
+            else
+                board[y][x] = ' ';
+
+            for(int k=0;k<4;k++){
+
+                int ty = y+dirt[k].first;
+                int tx = x+dirt[k].second;
+
+                if(inbox(ty, tx) && board[ty][tx]!='#'){
+
+                    if(board[ty][tx]=='$'){
+                        int by=ty+dirt[k].first;
+                        int bx=tx+dirt[k].second;
+
+                        if(moveBox(board, by, bx)){
+
+                            char c1=board[ty][tx];
+                            board[ty][tx]='@';
+
+                            char c2=board[by][bx];
+                            board[by][bx]='$';
+
+                            string tmp=encode(board);
+                            board[ty][tx]=c1;
+                            board[by][bx]=c2;
+
+                            if(visited.count(tmp)) continue;
+
+                            parent[tmp]=cur->state;
+                            
+                            //Get new Manhanttan Distance when moving a box 
+                            int _h = getManhattanDist(tmp);
+                            //f(n)=h(n)+g(n) the cost is 1
+                            Node* next = new Node(_h+1, tmp); 
+                            pq.push(next);
+                        }
+
+                    }else{
+
+                        char c=board[ty][tx];
+                        board[ty][tx]='@';
+                        string tmp=encode(board);
+                        board[ty][tx]=c;
+
+                        if(visited.count(tmp)) continue;
+
+                        parent[tmp]=cur->state;
+                        //f(n)=h(n)+g(n) the cost is 1
+                        Node* next = new Node(cur->h+1, tmp);
+                        pq.push(next);
+                    }
+                }
+            }
+        }
+
+
+        void Astar(){
+
+            unordered_set<string> visited;
+ 
+            unordered_map<string, string> parent;
+            parent[initState] = initState;
+ 
+            priority_queue<Node*, vector<Node*>, cmp> pq;
+            int _h = getManhattanDist(initState);
+            Node* head = new Node(_h, initState);
+            pq.push(head);
+        
+            while(!pq.empty()){
+            
+                Node *cur=pq.top();
+                pq.pop();
+
+                if(finalStates.count(cur->state)){
+                    print(parent, cur->state);
+                    return ;
+                }
+
+                getNextStatesAstar(cur, pq, parent, visited);
+
+            }
+
+            cout<<"No answer!"<<endl;
+
+        }
+*/
+
 
     public:
         Sokoban(string boardSize, string nWallSquares, string nBoxes, string nStorageLocations, string playerLoc){
@@ -641,15 +836,29 @@ class Sokoban{
         }
 
         void start(){
-            Greedy(); 
+            
+            int i;
+            cout<<"Choose a method (1:Breadth-First Search 2:Depth-First Search 3:Greedy)"<<endl;
+            cin >> i;
+
+            if(i==1){
+                BFS();
+            }else if(i==2){
+                DFS();
+            }else if(i==3){
+                Greedy();
+            }
         }
 };
 
 
 int main(){
-    
+/*        
+    Sokoban S(test1);
+    S.start();
+*/
     //while(1){
-        
+            
         string id;
         cout << "Please enter a two digits number from 00 to 10:" << endl; 
         cin >> id;
@@ -666,6 +875,6 @@ int main(){
         
         Sokoban S(boardSize, nWallSquares, nBoxes, nStorageLocations, playerLoc);
         S.start();
-
+    
    // }
 }
