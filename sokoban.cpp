@@ -8,6 +8,8 @@
 #include<queue>
 #include<fstream>
 #include<stack>
+#include<climits>
+#include<algorithm>
 
 using namespace std;
 
@@ -31,7 +33,7 @@ class Sokoban{
         int storages; //number of storages
 
         string initState;
-        unordered_set<string> finalStates; 
+        unordered_set<string> finalStates;
         unordered_set<pair<int,int>, pair_hash> storageLocs;
 
         vector<vector<int>> boundry; //0:unreachable, -1:uncertainty, 1 reachable
@@ -46,7 +48,7 @@ class Sokoban{
             ss>>sizeH;
             ss>>sizeW;
 
-            board.resize(sizeH, vector<char>(sizeW,' ')); 
+            board.resize(sizeH, vector<char>(sizeW,' '));
         }
 
         void setWalls(vector<vector<char>> &board){
@@ -70,7 +72,7 @@ class Sokoban{
 
             ss>>walls;
 
-            while(!ss.eof()){
+            for (int i=0; i<walls; i++){
                 int x,y;
                 ss>>x;
                 x-=1;
@@ -91,7 +93,7 @@ class Sokoban{
 
             ss>>boxes;
 
-            while(!ss.eof()){
+            for (int i=0; i<boxes; i++){
                 int x,y;
                 ss>>x;
                 x-=1;
@@ -108,7 +110,7 @@ class Sokoban{
 
             ss>>storages;
 
-            while(!ss.eof()){
+            for (int i=0; i<storages; i++){
                 int x,y;
                 ss>>x;
                 x-=1;
@@ -148,7 +150,7 @@ class Sokoban{
             if(isBoundry(board, ty, tx, d)){
                 boundry[i][j] = 0;
                 return true;
-            }else{ 
+            }else{
                 boundry[i][j] = 1;
                 return false;
             }
@@ -159,14 +161,14 @@ class Sokoban{
             boundry.resize(sizeH, vector<int>(sizeW,1));
 
             //change corners to 0(unreachable)
-            //and mark spaces with one wall neighbor as -1(uncertainty) 
+            //and mark spaces with one wall neighbor as -1(uncertainty)
             for(int i=0; i<sizeH; i++){
                 for(int j=0; j<sizeW; j++){
 
                     if(board[i][j]=='#'){
                         boundry[i][j] = 0;
 
-                    }else if(board[i][j]==' ' || board[i][j]=='@'){    
+                    }else if(board[i][j]==' ' || board[i][j]=='@'){
 
                         int cnt_x=0;
                         int cnt_y=0;
@@ -232,7 +234,7 @@ class Sokoban{
         }
 
         bool inbox(int y, int x){
-            return y>=0 && x>=0 && y<sizeH && x<sizeW; 
+            return y>=0 && x>=0 && y<sizeH && x<sizeW;
         }
 
         void addPlayerLoc(vector<vector<char>> board, int i, int j){
@@ -336,7 +338,7 @@ class Sokoban{
 
             visited.insert(cur);
             vector<vector<char>> board = decode(cur);
-            
+
             pair<int,int> playerLoc = getPlayerLoc(board);
             int y=playerLoc.first;
             int x=playerLoc.second;
@@ -420,17 +422,17 @@ class Sokoban{
 
                     getNextStatesBFS(cur, q, parent, visited);
 
-                }        
+                }
             }
 
             cout<<"No answer!"<<endl;
         }
-        
+
         void getNextStatesDFS(string cur, stack<string>& stk, unordered_map<string,string> &parent,  unordered_set<string> &visited){
 
             visited.insert(cur);
             vector<vector<char>> board = decode(cur);
-            
+
             pair<int,int> playerLoc = getPlayerLoc(board);
             int y=playerLoc.first;
             int x=playerLoc.second;
@@ -514,7 +516,7 @@ class Sokoban{
 
                     getNextStatesDFS(cur, stk, parent, visited);
 
-                }        
+                }
             }
 
             cout<<"No answer!"<<endl;
@@ -534,16 +536,16 @@ class Sokoban{
         };
 
         int getManhattanDist(string cur){
-            
+
             vector<vector<char>> board = decode(cur);
             int h=0;
-        
+
             for(int i=0;i<sizeH;i++){
                 for(int j=0;j<sizeW;j++){
                     if(board[i][j]=='$'){
-                        
+
                         int min_h=INT_MAX;
-                        
+
                         for(auto s:storageLocs){
                             int sy=s.first;
                             int sx=s.second;
@@ -564,14 +566,14 @@ class Sokoban{
             }
 
             return h;
-        
+
         }
-        
+
         void getNextStatesGreedy(Node *cur, priority_queue<Node*, vector<Node*>, cmp>& pq, unordered_map<string,string> &parent,  unordered_set<string> &visited){
 
             visited.insert(cur->state);
             vector<vector<char>> board = decode(cur->state);
-            
+
             pair<int,int> playerLoc = getPlayerLoc(board);
             int y=playerLoc.first;
             int x=playerLoc.second;
@@ -607,8 +609,8 @@ class Sokoban{
                             if(visited.count(tmp)) continue;
 
                             parent[tmp]=cur->state;
-                            
-                            //Get new Manhanttan Distance when moving a box 
+
+                            //Get new Manhanttan Distance when moving a box
                             int _h = getManhattanDist(tmp);
                             Node* next = new Node(_h, tmp);
                             pq.push(next);
@@ -635,17 +637,17 @@ class Sokoban{
         void Greedy(){
 
             unordered_set<string> visited;
- 
+
             unordered_map<string, string> parent;
             parent[initState] = initState;
- 
+
             priority_queue<Node*, vector<Node*>, cmp> pq;
             int _h = getManhattanDist(initState);
             Node* head = new Node(_h, initState);
             pq.push(head);
-        
+
             while(!pq.empty()){
-            
+
                 Node *cur=pq.top();
                 pq.pop();
 
@@ -667,7 +669,7 @@ class Sokoban{
 
             visited.insert(cur->state);
             vector<vector<char>> board = decode(cur->state);
-            
+
             pair<int,int> playerLoc = getPlayerLoc(board);
             int y=playerLoc.first;
             int x=playerLoc.second;
@@ -703,11 +705,11 @@ class Sokoban{
                             if(visited.count(tmp)) continue;
 
                             parent[tmp]=cur->state;
-                            
-                            //Get new Manhanttan Distance when moving a box 
+
+                            //Get new Manhanttan Distance when moving a box
                             int _h = getManhattanDist(tmp);
                             //f(n)=h(n)+g(n) the cost is 1
-                            Node* next = new Node(_h+1, tmp); 
+                            Node* next = new Node(_h+1, tmp);
                             pq.push(next);
                         }
 
@@ -733,17 +735,17 @@ class Sokoban{
         void Astar(){
 
             unordered_set<string> visited;
- 
+
             unordered_map<string, string> parent;
             parent[initState] = initState;
- 
+
             priority_queue<Node*, vector<Node*>, cmp> pq;
             int _h = getManhattanDist(initState);
             Node* head = new Node(_h, initState);
             pq.push(head);
-        
+
             while(!pq.empty()){
-            
+
                 Node *cur=pq.top();
                 pq.pop();
 
@@ -767,8 +769,8 @@ class Sokoban{
 
             vector<vector<char>> board;
 
-            initSize(board, boardSize); 
-            initWalls(board, nWallSquares); 
+            initSize(board, boardSize);
+            initWalls(board, nWallSquares);
             initStorageLoc(board, nStorageLocations);
             initBoxes(board, nBoxes);
             initPlayerLoc(board, playerLoc);
@@ -836,7 +838,7 @@ class Sokoban{
         }
 
         void start(){
-            
+
             int i;
             cout<<"Choose a method (1:Breadth-First Search 2:Depth-First Search 3:Greedy)"<<endl;
             cin >> i;
@@ -853,14 +855,14 @@ class Sokoban{
 
 
 int main(){
-/*        
+/*
     Sokoban S(test1);
     S.start();
 */
     //while(1){
-            
+
         string id;
-        cout << "Please enter a two digits number from 00 to 10:" << endl; 
+        cout << "Please enter a two digits number from 00 to 10:" << endl;
         cin >> id;
 
         string name = "sokoban" + id + ".txt";
@@ -872,9 +874,9 @@ int main(){
         getline(input, nBoxes);
         getline(input, nStorageLocations);
         getline(input, playerLoc);
-        
+
         Sokoban S(boardSize, nWallSquares, nBoxes, nStorageLocations, playerLoc);
         S.start();
-    
+
    // }
 }
