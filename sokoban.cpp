@@ -359,8 +359,8 @@ class Sokoban{
             int tx = bx+dirt[k].second;
             if (board[ty][tx] == '$'){
               int nextRes = restrictedDirections(board, ty, tx);
-              if (
-                ( (curRes == 1) && (nextRes == 1) && (k>1) ) || ((curRes == 1) && (nextRes == 3) && (k>1)) || ((curRes == 2) && (nextRes == 2) && (k<2)) || ((curRes == 2) && (nextRes == 3) && (k<2))
+              if ( (curRes == 3) && (nextRes == 3)
+                //( (curRes == 1) && (nextRes == 1) && (k>1) ) || ((curRes == 1) && (nextRes == 3) && (k>1)) || ((curRes == 2) && (nextRes == 2) && (k<2)) || ((curRes == 2) && (nextRes == 3) && (k<2))
               ){
                 return true;
               }
@@ -401,6 +401,12 @@ class Sokoban{
 
                             char c2=board[by][bx];
                             board[by][bx]='$';
+
+                            if (c2!= '.' && detectAdjacentBoxDeadlock(board, by, bx)) {
+                              board[ty][tx]=c1;
+                              board[by][bx]=c2;
+                              continue;
+                            }
 
                             string tmp=encode(board);
                             board[ty][tx]=c1;
@@ -495,6 +501,12 @@ class Sokoban{
 
                             char c2=board[by][bx];
                             board[by][bx]='$';
+
+                            if (c2!= '.' && detectAdjacentBoxDeadlock(board, by, bx)) {
+                              board[ty][tx]=c1;
+                              board[by][bx]=c2;
+                              continue;
+                            }
 
                             string tmp=encode(board);
                             board[ty][tx]=c1;
@@ -637,7 +649,11 @@ class Sokoban{
                             char c2=board[by][bx];
                             board[by][bx]='$';
 
-                            if (c2!= '.' && detectAdjacentBoxDeadlock(board, by, bx)) continue;
+                            if (c2!= '.' && detectAdjacentBoxDeadlock(board, by, bx)) {
+                              board[ty][tx]=c1;
+                              board[by][bx]=c2;
+                              continue;
+                            }
 
                             string tmp=encode(board);
                             board[ty][tx]=c1;
