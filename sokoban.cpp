@@ -334,6 +334,41 @@ class Sokoban{
             return true;
         }
 
+        int restrictedDirections(vector<vector<char>> &board, int by, int bx) {
+          bool resY = false;
+          bool resX = false;
+          for(int k=0;k<4;k++){
+            int ty = by+dirt[k].first;
+            int tx = bx+dirt[k].second;
+            if (board[ty][tx] == '#' || board[ty][tx] == '$'){
+              if (k<2) resY = true;
+              else resX = true;
+            }
+          }
+          if (resY&&resX) return 3;
+          if (resY) return 1;
+          if (resX) return 2;
+          return 0;
+        }
+
+        bool detectAdjacentBoxDeadlock(vector<vector<char>> &board, int by, int bx) {
+          int curRes = restrictedDirections(board, by, bx);
+          if (curRes == 0) return false;
+          for(int k=0;k<4;k++){
+            int ty = by+dirt[k].first;
+            int tx = bx+dirt[k].second;
+            if (board[ty][tx] == '$'){
+              int nextRes = restrictedDirections(board, ty, tx);
+              if (
+                ( (curRes == 1) && (nextRes == 1) && (k>1) ) || ((curRes == 1) && (nextRes == 3) && (k>1)) || ((curRes == 2) && (nextRes == 2) && (k<2)) || ((curRes == 2) && (nextRes == 3) && (k<2))
+              ){
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+
         void getNextStatesBFS(string cur, queue<string>& q, unordered_map<string,string> &parent,  unordered_set<string> &visited){
 
             visited.insert(cur);
@@ -601,6 +636,8 @@ class Sokoban{
 
                             char c2=board[by][bx];
                             board[by][bx]='$';
+
+                            if (c2!= '.' && detectAdjacentBoxDeadlock(board, by, bx)) continue;
 
                             string tmp=encode(board);
                             board[ty][tx]=c1;
