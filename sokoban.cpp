@@ -890,33 +890,35 @@ class Sokoban{
 
         }
 
-        void start(){
+        void start(string i){
 
-            int i;
-            cout<<"Choose a method (1:Breadth-First Search 2:Depth-First Search 3:Greedy)"<<endl;
-            cin >> i;
+            //int i;
+            //cout<<"Choose a method (1:Breadth-First Search 2:Depth-First Search 3:Greedy)"<<endl;
+            //cin >> i;
 
-            if(i==1){
+            if(i.compare("1")==0){
                 BFS();
-            }else if(i==2){
+            }else if(i.compare("2")==0){
                 DFS();
-            }else if(i==3){
+            }else if(i.compare("3")==0){
                 Greedy();
             }
         }
 };
 
 
-int main(){
+int main(int argc, char** argv){
 /*
     Sokoban S(test1);
     S.start();
 */
     //while(1){
+        if (argc != 3) return 0;
 
         string id;
-        cout << "Please enter a two digits number from 00 to 10:" << endl;
-        cin >> id;
+        //cout << "Please enter a two digits number from 00 to 10:" << endl;
+        //cin >> id;
+        id = argv[1];
 
         string name = "sokoban" + id + ".txt";
         ifstream input("inputs/"+name);
@@ -929,7 +931,7 @@ int main(){
         getline(input, playerLoc);
 
         Sokoban S(boardSize, nWallSquares, nBoxes, nStorageLocations, playerLoc);
-        S.start();
+        S.start(argv[2]);
 
    // }
 }
